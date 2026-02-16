@@ -3,8 +3,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Signup from "./components/Auth/Signup";
-import TeacherDashboard from "./components/Dashboard/Teacher";
-import StudentDashboard from "./components/Dashboard/Student";
+import TeacherDashboard from "./components/Dashboard/teacher";
+import StudentDashboard from "./components/Dashboard/student";
 import Login from "./components/Auth/Login";
 import ProtectedRoute from "./components/Auth/Protected";
 
