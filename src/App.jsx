@@ -1,16 +1,24 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import Signup from './components/Auth/singup'
-function App() {
-  const [count, setCount] = useState(0)
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Signup from "./components/Auth/Signup";
+import TeacherDashboard from "./components/Dashboard/Teacher";
+import StudentDashboard from "./components/Dashboard/Student";
 
+function App() {
   return (
     <>
-    <Signup />
+      <Routes>
+        <Route path="/" element={<Signup />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/teacherdashboard" element={<TeacherDashboard />} />
+        <Route path="/studentdashboard" element={<StudentDashboard />} />
+      </Routes>
+      <ToastContainer position="top-right" autoClose={3000} />
     </>
-     )
+   
+  );
 }
 
-export default App
+export default App;
