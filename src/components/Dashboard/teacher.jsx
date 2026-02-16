@@ -1,13 +1,32 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import axios from "axios";
+
 
 function Teacher() {
   const navigate = useNavigate();
+  
+  useEffect(() => {
+  const token = localStorage.getItem("token")
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
+  axios.get("http://localhost:5000/auth/teacher-dashboard", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  .then(res => {
+     console.log("Authorized")
+  })
+  .catch(err => {
+     localStorage.removeItem("token")
+     navigate("/login")
+  })
+}, [])
+const handleLogout=() =>{
+  localStorage.removeItem('token')
+  navigate('/login')
+}
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
