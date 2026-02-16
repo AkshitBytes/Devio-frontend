@@ -33,13 +33,7 @@ function Signup() {
 
       handleSuccess(response.data.message)
 
-      const userRole = response.data.user.role;
-      if(userRole === "teacher"){
-        navigate("/teacherdashboard")
-      }else if(userRole === "student"){
-        navigate("/studentdashboard")
-      }
-
+      navigate("/login")
     }catch(err){
       if(err.response){
         handleError(err.response.data.message)
