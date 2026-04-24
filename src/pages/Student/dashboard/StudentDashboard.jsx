@@ -9,9 +9,6 @@ import {
 } from "lucide-react";
 import illustration from "../../../assets/illustration.png";
 
-/* ─────────────────────────────────────────────
-   CONSTANTS
-───────────────────────────────────────────── */
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard",   path: "/studentdashboard"    },
   { icon: Code2,           label: "Practice",    path: "/student/practice"    },
@@ -25,9 +22,6 @@ const DIFF_STYLE = {
   Hard:   { bg: "bg-rose-50",    text: "text-rose-600",    dot: "bg-rose-400"    },
 };
 
-/* ─────────────────────────────────────────────
-   CIRCULAR PROGRESS RING
-───────────────────────────────────────────── */
 function Ring({ size = 112, stroke = 11, pct = 0, c1, c2, label, sub }) {
   const r    = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
@@ -69,9 +63,6 @@ function Ring({ size = 112, stroke = 11, pct = 0, c1, c2, label, sub }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   STAT BAR ROW
-───────────────────────────────────────────── */
 function StatBar({ label, pct, color }) {
   return (
     <div className="flex items-center gap-3">
@@ -89,9 +80,6 @@ function StatBar({ label, pct, color }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   WORKING CALENDAR
-───────────────────────────────────────────── */
 function ActivityCalendar({ activeDates = [] }) {
   const today  = new Date();
   const [vy, setVy] = useState(today.getFullYear());
@@ -167,9 +155,6 @@ function ActivityCalendar({ activeDates = [] }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   AUTO-ROTATE PROGRESS BAR
-───────────────────────────────────────────── */
 function AutoRotateBar({ onTick }) {
   const [pct, setPct] = useState(0);
   useEffect(() => {
@@ -198,9 +183,6 @@ function AutoRotateBar({ onTick }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   MAIN DASHBOARD
-───────────────────────────────────────────── */
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const [user,     setUser]     = useState({ name: "Student" });
@@ -208,32 +190,26 @@ export default function StudentDashboard() {
   const [loading,  setLoading]  = useState(true);
   const menuRef  = useRef(null);
 
-  // All stats from API
   const [st, setSt] = useState({
-    points: 0,
-    battles: 0,       // battlesWon
-    totalBattles: 1,  // total battles fought (for ring denominator)
-    solved: 0,
-    totalQuestions: 1,
-    streak: 0,
-    longestStreak: 0,
+    points: 0, battles: 0, totalBattles: 1,
+    solved: 0, totalQuestions: 1, streak: 0, longestStreak: 0,
   });
-  const [bPct, setBPct] = useState(0);  // battlesWon / totalBattles * 100
-  const [qPct, setQPct] = useState(0);  // solved / totalQuestions * 100
+  const [bPct, setBPct] = useState(0);
+  const [qPct, setQPct] = useState(0);
 
   const [code, setCode] = useState("");
-  const classrooms = [];
+  const [classrooms, setClassrooms] = useState([]);
   const [recommendedProblems, setRecommendedProblems] = useState([]);
   const [activeDates, setActiveDates] = useState([]);
+  // joinStatus: null | "loading" | "error"
+  const [joinStatus, setJoinStatus] = useState(null);
+  const [joinError, setJoinError] = useState("");
 
-  // Recommended problems pagination
   const VISIBLE = 4;
   const [idx, setIdx] = useState(0);
   const [dir, setDir] = useState(1);
-
   const TOTAL = recommendedProblems.length;
   const shown = recommendedProblems.slice(idx, idx + VISIBLE);
-
   const goNext = () => { if (!TOTAL) return; setDir(1); setIdx(i => (i + VISIBLE >= TOTAL ? 0 : i + VISIBLE)); };
   const goPrev = () => { setDir(-1); setIdx(i => Math.max(0, i - VISIBLE)); };
 
@@ -247,47 +223,32 @@ export default function StudentDashboard() {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (r.data.user) setUser(r.data.user);
-
         if (r.data.stats) {
           const s = r.data.stats;
-          const pts            = s.totalPoints || 0;
-          const battlesWon     = s.battlesWon || 0;
-          const sol            = s.questionsSolved || 0;
-          const str            = s.streak || 0;
-          const totalBattles   = Math.max(1, s.totalBattles || 0);
-          const totalQuestions = Math.max(1, s.totalQuestionsAvailable || 0);
-
-          setSt({
-            points: pts,
-            battles: battlesWon,
-            totalBattles,
-            solved: sol,
-            totalQuestions,
-            streak: str,
-            longestStreak: s.longestStreak || 0,
-          });
-
-          // Ring percentages
+          const pts          = s.totalPoints || 0;
+          const battlesWon   = s.battlesWon || 0;
+          const sol          = s.questionsSolved || 0;
+          const str          = s.streak || 0;
+          const totalBattles = Math.max(1, s.totalBattles || 0);
+          const totalQ       = Math.max(1, s.totalQuestionsAvailable || 0);
+          setSt({ points: pts, battles: battlesWon, totalBattles, solved: sol, totalQuestions: totalQ, streak: str, longestStreak: s.longestStreak || 0 });
           setBPct(Math.min(100, Math.round((battlesWon / totalBattles) * 100)));
-          setQPct(Math.min(100, Math.round((sol / totalQuestions) * 100)));
+          setQPct(Math.min(100, Math.round((sol / totalQ) * 100)));
         }
-
-        if (Array.isArray(r.data.recommendedProblems)) {
-          setRecommendedProblems(r.data.recommendedProblems);
-        }
-        if (Array.isArray(r.data.user?.activityDates)) {
-          setActiveDates(r.data.user.activityDates);
-        }
-      } catch (e) {
-        // ignore
-      } finally {
-        setLoading(false);
-      }
+        if (Array.isArray(r.data.recommendedProblems)) setRecommendedProblems(r.data.recommendedProblems);
+        if (Array.isArray(r.data.user?.activityDates))  setActiveDates(r.data.user.activityDates);
+        try {
+          const cr = await axios.get("http://localhost:5000/classrooms/student", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (Array.isArray(cr.data?.classrooms)) setClassrooms(cr.data.classrooms);
+        } catch (_) {}
+      } catch (_) {}
+      finally { setLoading(false); }
     };
 
     fetchDashboard();
 
-    // Listen for global updates (e.g. when points are awarded) so UI refreshes across pages
     const onUpdate = async (e) => {
       try {
         if (e?.detail && (e.detail.user || e.detail.stats)) {
@@ -300,25 +261,57 @@ export default function StudentDashboard() {
             const sol = s.questionsSolved || 0;
             const str = s.streak || 0;
             const totalBattles = Math.max(1, s.totalBattles || 0);
-            const totalQuestions = Math.max(1, s.totalQuestionsAvailable || 0);
-            setSt({ points: pts, battles: battlesWon, totalBattles, solved: sol, totalQuestions, streak: str, longestStreak: s.longestStreak || 0 });
+            const totalQ = Math.max(1, s.totalQuestionsAvailable || 0);
+            setSt({ points: pts, battles: battlesWon, totalBattles, solved: sol, totalQuestions: totalQ, streak: str, longestStreak: s.longestStreak || 0 });
             setBPct(Math.min(100, Math.round((battlesWon / totalBattles) * 100)));
-            setQPct(Math.min(100, Math.round((sol / totalQuestions) * 100)));
+            setQPct(Math.min(100, Math.round((sol / totalQ) * 100)));
           }
           if (Array.isArray(d.recommendedProblems)) setRecommendedProblems(d.recommendedProblems);
-          if (Array.isArray(d.user?.activityDates)) setActiveDates(d.user.activityDates);
+          if (Array.isArray(d.user?.activityDates))  setActiveDates(d.user.activityDates);
         } else {
-          // fallback: re-fetch the dashboard
           await fetchDashboard();
         }
-      } catch (err) {
-        // ignore
-      }
+      } catch (_) {}
     };
 
     window.addEventListener("devio:userStatsUpdated", onUpdate);
     return () => window.removeEventListener("devio:userStatsUpdated", onUpdate);
+    // No socket here — ClassroomPage owns the socket lifecycle
   }, []);
+
+  // ── Join classroom ─────────────────────────────────────────────────────────
+  // Strategy: call request-join REST to validate the code and get the classroomId,
+  // then immediately navigate to ClassroomPage which owns the full lobby/socket flow.
+  const joinClassroom = async () => {
+    const token = localStorage.getItem("token");
+    const joinCode = code.trim().toUpperCase();
+    if (!token || !joinCode) return;
+
+    setJoinStatus("loading");
+    setJoinError("");
+
+    try {
+      const r = await axios.post(
+        "http://localhost:5000/classrooms/request-join",
+        { code: joinCode },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const cls = r.data?.classroom;
+      if (!cls?._id) throw new Error("Invalid classroom response");
+
+      // Navigate immediately. ClassroomPage will:
+      //   1. See a 403 on GET /classrooms/:id  →  enter pending lobby
+      //   2. Open its own socket + emit classroom:request_join
+      //   3. Show "Waiting for approval" UI
+      //   4. Handle approval/denial and transition in
+      navigate(`/classroom/${cls._id}`);
+    } catch (e) {
+      setJoinStatus("error");
+      const msg = e.response?.data?.message || e.message || "Request failed.";
+      setJoinError(msg);
+    }
+  };
 
   useEffect(() => {
     const fn = e => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
@@ -326,39 +319,17 @@ export default function StudentDashboard() {
     return () => document.removeEventListener("mousedown", fn);
   }, []);
 
-  // Build STAT_ROWS from live data
   const STAT_ROWS = [
-    {
-      label: "Total Points",
-      val: st.points,
-      pct: Math.min(100, Math.round((st.points / Math.max(1, st.points < 10000 ? 10000 : st.points * 1.2)) * 100)),
-      color: "from-orange-400 to-amber-400",
-    },
-    {
-      label: "Battles Won",
-      val: st.battles,
-      pct: bPct,
-      color: "from-indigo-400 to-violet-500",
-    },
-    {
-      label: "Questions Solved",
-      val: st.solved,
-      pct: qPct,
-      color: "from-sky-400 to-cyan-500",
-    },
-    {
-      label: "Day Streak",
-      val: st.streak,
-      pct: Math.min(100, Math.round((st.streak / Math.max(1, 30)) * 100)),
-      color: "from-rose-400 to-pink-500",
-    },
+    { label: "Total Points",     val: st.points,  pct: Math.min(100, Math.round((st.points  / Math.max(1, st.points < 10000 ? 10000 : st.points * 1.2)) * 100)), color: "from-orange-400 to-amber-400" },
+    { label: "Battles Won",      val: st.battles, pct: bPct, color: "from-indigo-400 to-violet-500" },
+    { label: "Questions Solved", val: st.solved,  pct: qPct, color: "from-sky-400 to-cyan-500" },
+    { label: "Day Streak",       val: st.streak,  pct: Math.min(100, Math.round((st.streak / Math.max(1, 30)) * 100)), color: "from-rose-400 to-pink-500" },
   ];
 
-  /* ── render ─────────────────────────────────────── */
   return (
     <div className="flex h-screen bg-[#F4F7FE] overflow-hidden" style={{ fontFamily: "'DM Sans','Nunito',sans-serif" }}>
 
-      {/* ══════════ LEFT SIDEBAR ══════════════════════ */}
+      {/* LEFT SIDEBAR */}
       <aside className="w-[220px] shrink-0 bg-white border-r border-slate-100 flex flex-col h-full z-20 shadow-sm">
         <div className="h-[72px] flex items-center px-6 gap-2.5 border-b border-slate-100">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow">
@@ -381,10 +352,10 @@ export default function StudentDashboard() {
         </nav>
       </aside>
 
-      {/* ══════════ MAIN + RIGHT ══════════════════════ */}
+      {/* MAIN + RIGHT */}
       <div className="flex-1 flex flex-col overflow-hidden">
 
-        {/* ── HEADER ─────────────────────────────────── */}
+        {/* HEADER */}
         <header className="h-[72px] bg-white border-b border-slate-100 px-8 flex items-center justify-between shrink-0 z-10">
           <div className="relative w-80">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
@@ -431,10 +402,10 @@ export default function StudentDashboard() {
           </div>
         </header>
 
-        {/* ── BODY ───────────────────────────────────── */}
+        {/* BODY */}
         <div className="flex-1 overflow-hidden flex">
 
-          {/* ─── CENTER COLUMN ──────────────────────── */}
+          {/* CENTER COLUMN */}
           <div className="flex-1 overflow-y-auto px-7 py-6 flex flex-col gap-5" style={{ scrollbarWidth:"none" }}>
 
             {/* Welcome banner */}
@@ -459,25 +430,20 @@ export default function StudentDashboard() {
               </div>
             </div>
 
-            {/* Stats header */}
+            {/* Stats */}
             <div className="flex items-center justify-between">
               <h2 className="text-[15px] font-extrabold text-slate-800">Your Stats</h2>
               <button onClick={() => navigate("/student/leaderboard")} className="text-xs font-bold text-indigo-600 hover:text-indigo-700">View Leaderboard</button>
             </div>
 
-            {/* Stats card */}
             {loading ? (
               <div className="bg-white rounded-[22px] p-8 shadow-sm border border-slate-100 flex items-center justify-center h-48">
                 <div className="w-8 h-8 rounded-full border-4 border-transparent border-t-indigo-600 animate-spin"/>
               </div>
             ) : (
               <div className="bg-white rounded-[22px] p-6 shadow-sm border border-slate-100 flex gap-6 items-center shrink-0">
-                {/* bar list */}
                 <div className="flex-1 flex flex-col gap-4">
-                  {STAT_ROWS.map(s => (
-                    <StatBar key={s.label} label={s.label} pct={s.pct} color={s.color}/>
-                  ))}
-                  {/* value chips */}
+                  {STAT_ROWS.map(s => <StatBar key={s.label} label={s.label} pct={s.pct} color={s.color}/>)}
                   <div className="grid grid-cols-2 gap-2 mt-1">
                     {STAT_ROWS.map(s => (
                       <div key={s.label} className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2">
@@ -490,25 +456,11 @@ export default function StudentDashboard() {
                     ))}
                   </div>
                 </div>
-
-                {/* divider */}
                 <div className="w-px self-stretch bg-slate-100"/>
-
-                {/* rings — use real data */}
                 <div className="flex flex-col items-center gap-4 shrink-0">
                   <div className="flex gap-8">
-                    <Ring
-                      pct={bPct}
-                      c1="#F59E0B" c2="#F97316"
-                      label="Battles Won"
-                      sub={`${st.battles}/${st.totalBattles}`}
-                    />
-                    <Ring
-                      pct={qPct}
-                      c1="#8B5CF6" c2="#6366F1"
-                      label="Questions"
-                      sub={`${st.solved}/${st.totalQuestions}`}
-                    />
+                    <Ring pct={bPct} c1="#F59E0B" c2="#F97316" label="Battles Won"  sub={`${st.battles}/${st.totalBattles}`}/>
+                    <Ring pct={qPct} c1="#8B5CF6" c2="#6366F1" label="Questions"    sub={`${st.solved}/${st.totalQuestions}`}/>
                   </div>
                   <p className="text-[10px] text-slate-400 text-center max-w-[180px]">
                     Battles Won &amp; Questions Solved vs. available
@@ -523,27 +475,46 @@ export default function StudentDashboard() {
                 <h2 className="text-[15px] font-extrabold text-slate-800">Join a Classroom</h2>
                 <span className="text-xs text-slate-400">Enter code to join</span>
               </div>
-              <div className="flex gap-2 mb-4">
-                <input value={code} onChange={e => setCode(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && code.trim() && (alert(`Joining: ${code.toUpperCase()}`), setCode(""))}
+              <div className="flex gap-2 mb-3">
+                <input
+                  value={code}
+                  onChange={e => { setCode(e.target.value); setJoinStatus(null); setJoinError(""); }}
+                  onKeyDown={e => e.key === "Enter" && joinClassroom()}
                   placeholder="Classroom code e.g. CS-2024"
-                  className="flex-1 bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 transition-all"/>
-                <button onClick={() => { if (!code.trim()) return; alert(`Joining: ${code.toUpperCase()}`); setCode(""); }}
-                  className="bg-indigo-600 text-white text-sm font-bold px-5 rounded-xl hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">
-                  Join
+                  disabled={joinStatus === "loading"}
+                  className="flex-1 bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 transition-all disabled:cursor-not-allowed disabled:opacity-70"
+                />
+                <button
+                  onClick={joinClassroom}
+                  disabled={joinStatus === "loading"}
+                  className={`text-sm font-bold px-5 rounded-xl shadow-sm transition-colors ${
+                    joinStatus === "loading"
+                      ? "bg-slate-300 text-slate-600 cursor-not-allowed"
+                      : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200"
+                  }`}
+                >
+                  {joinStatus === "loading" ? "Checking..." : "Join"}
                 </button>
               </div>
+
+              {joinStatus === "error" && (
+                <div className="mb-3 text-sm font-semibold text-rose-600">
+                  {joinError || "Could not send the join request. Try again."}
+                </div>
+              )}
+
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Joined Classrooms</div>
               {classrooms.length ? (
                 <div className="flex flex-col gap-2">
-                  {classrooms.map((c,i) => (
-                    <div key={i} className="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-colors">
+                  {classrooms.map((c, i) => (
+                    <button key={c._id || i} onClick={() => navigate(`/classroom/${c._id}`)}
+                      className="text-left flex items-center justify-between px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-colors">
                       <div>
                         <div className="text-sm font-bold text-slate-800">{c.name}</div>
-                        <div className="text-xs text-slate-400 mt-0.5">Mentor: {c.mentor}</div>
+                        <div className="text-xs text-slate-400 mt-0.5">Code: {c.code}</div>
                       </div>
                       <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">Active</span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               ) : (
@@ -552,13 +523,9 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* ─── RIGHT COLUMN ───────────────────────── */}
+          {/* RIGHT COLUMN */}
           <div className="w-[400px] shrink-0 border-l border-slate-100 overflow-y-auto px-5 py-6 flex flex-col gap-5" style={{ scrollbarWidth:"none" }}>
-
-            {/* Calendar */}
             <ActivityCalendar activeDates={activeDates}/>
-
-            {/* Recommended Problems */}
             <div className="bg-white rounded-[22px] p-5 shadow-sm border border-slate-100">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm font-extrabold text-slate-800">Recommended</div>
@@ -567,7 +534,6 @@ export default function StudentDashboard() {
                   View all
                 </button>
               </div>
-
               <div className="flex items-center justify-between mb-2">
                 <button onClick={goPrev} disabled={idx === 0}
                   className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-indigo-600 disabled:opacity-30 transition-colors px-2 py-1 rounded-lg hover:bg-slate-50">
@@ -583,21 +549,12 @@ export default function StudentDashboard() {
                   Next <ChevronRight className="w-3.5 h-3.5"/>
                 </button>
               </div>
-
               <AnimatePresence mode="wait">
-                <motion.div
-                  key={idx}
-                  initial={{ opacity:0, y: dir * 14 }}
-                  animate={{ opacity:1, y:0 }}
-                  exit={{ opacity:0, y: dir * -14 }}
-                  transition={{ duration:0.3 }}
-                  className="flex flex-col">
+                <motion.div key={idx} initial={{ opacity:0, y: dir * 14 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y: dir * -14 }} transition={{ duration:0.3 }} className="flex flex-col">
                   {shown.map((p, i) => {
                     const ds = DIFF_STYLE[p.difficulty] || DIFF_STYLE.Easy;
                     return (
-                      <motion.div key={`${idx}-${i}`}
-                        initial={{ opacity:0, x:10 }} animate={{ opacity:1, x:0 }}
-                        transition={{ delay: i * 0.06 }}
+                      <motion.div key={`${idx}-${i}`} initial={{ opacity:0, x:10 }} animate={{ opacity:1, x:0 }} transition={{ delay: i * 0.06 }}
                         className="flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-slate-50 transition-colors group cursor-pointer"
                         onClick={() => navigate(`/student/practice/solver?id=${p.id}`)}>
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -610,9 +567,7 @@ export default function StudentDashboard() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${ds.bg} ${ds.text}`}>
-                            {p.difficulty}
-                          </span>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${ds.bg} ${ds.text}`}>{p.difficulty}</span>
                           <button onClick={e => { e.stopPropagation(); navigate(`/student/practice/solver?id=${p.id}`); }}
                             className="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors">
                             Solve
@@ -628,10 +583,8 @@ export default function StudentDashboard() {
                   )}
                 </motion.div>
               </AnimatePresence>
-
               <AutoRotateBar onTick={goNext}/>
             </div>
-
           </div>
         </div>
       </div>

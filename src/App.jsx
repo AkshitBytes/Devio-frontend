@@ -14,6 +14,8 @@ import PracticeSolver from "./pages/Student/Practice/PracticeSolver.jsx";
 import FreePracticePage from "./pages/Student/Practice/FreePracticePage.jsx";
 import BattlePage from "./pages/Student/battles/BattlePage.jsx";
 import LeaderBoard from "./pages/Student/leaderboard/LeaderBoard.jsx";
+import ClassroomPage from "./pages/Classroom/ClassroomPage.jsx";
+import ProtectedAny from "./pages/Auth/ProtectedAny.jsx";
 
 const PageTransition = ({ children }) => (
   <motion.div
@@ -76,6 +78,12 @@ function AnimatedRoutes() {
           <ProtectedRoute role="student">
             <PageTransition><LeaderBoard /></PageTransition>
           </ProtectedRoute>
+        } />
+
+        <Route path="/classroom/:classroomId" element={
+          <ProtectedAny>
+            <PageTransition><ClassroomPage /></PageTransition>
+          </ProtectedAny>
         } />
       </Routes>
     </AnimatePresence>
