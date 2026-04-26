@@ -17,10 +17,18 @@ async function fetchAnyUser(token) {
   const headers = { Authorization: `Bearer ${token}` };
   try {
     const r = await axios.get(`${API}/dashboard/student`, { headers });
-    return { user: r.data.user, role: "student" };
+    const student = r.data.user || {};
+    return {
+      user: { ...student, _id: student._id || student.id || null },
+      role: "student",
+    };
   } catch (_) {}
   const r2 = await axios.get(`${API}/dashboard/teacher`, { headers });
-  return { user: r2.data.teacher || r2.data.user, role: "teacher" };
+  const teacher = r2.data.teacher || r2.data.user || {};
+  return {
+    user: { ...teacher, _id: teacher._id || teacher.id || null },
+    role: "teacher",
+  };
 }
 
 function NotificationToast({ note, onDismiss }) {
@@ -705,7 +713,7 @@ export default function ClassroomPage() {
           <div>
             <h1 className="text-2xl font-black text-slate-800">{classroom.name}</h1>
             <p className="text-sm text-slate-500 font-medium">
-              Live chat + collaborative editor + collaborative canvas (CRDT).
+              Your Own Collaborative Classroom
             </p>
           </div>
           <div className="text-right">

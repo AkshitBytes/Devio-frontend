@@ -70,6 +70,7 @@
     const [problemPage, setProblemPage] = useState(0);
     const [autoTicks, setAutoTicks] = useState(60);
     const [userStats, setUserStats] = useState({ points: 0, solved: 0, streak: 0, rank: "-" });
+    const [student, setStudent] = useState({ name: "Student" });
 
     useEffect(() => {
       const token = localStorage.getItem("token");
@@ -84,6 +85,7 @@
       if (!token) return;
       axios.get("http://localhost:5000/dashboard/student", { headers: { Authorization: `Bearer ${token}` } })
         .then((res) => {
+          if (res.data.user) setStudent(res.data.user);
           setUserStats((s) => ({
             ...s,
             points: res.data?.stats?.totalPoints || 0,
@@ -117,6 +119,7 @@
           if (!token) return;
           axios.get('http://localhost:5000/dashboard/student', { headers: { Authorization: `Bearer ${token}` } })
             .then((res) => {
+              if (res.data.user) setStudent(res.data.user);
               setUserStats((s) => ({ ...s, points: res.data?.stats?.totalPoints || 0, solved: res.data?.stats?.questionsSolved || 0, streak: res.data?.stats?.streak || 0 }));
             }).catch(() => {});
         }
@@ -172,7 +175,7 @@
                 <span className="text-sm font-extrabold text-indigo-600">{userStats.points.toLocaleString()} Points</span>
               </div>
               <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 text-white flex items-center justify-center font-extrabold text-sm shadow">
-                C
+                {student.name?.charAt(0) || "S"}
               </div>
             </div>
           </header>

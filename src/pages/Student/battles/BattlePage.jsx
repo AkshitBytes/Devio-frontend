@@ -83,7 +83,7 @@ const Confetti = () => {
     return null;
 };
 
-/* ─── Shared Sidebar (no Start Quest button) ─── */
+/*  Shared Sidebar  */
 function Sidebar({ navigate, user }) {
     const path = typeof window !== "undefined" ? window.location.pathname : "";
     return (
@@ -211,7 +211,7 @@ export default function BattlePage() {
 
     const [phase, setPhase]             = useState("lobby");
     const [activeQ, setActiveQ]         = useState(0);
-    const [user, setUser]               = useState({ name: lsUsername, id: storedUserId });
+    const [user, setUser]               = useState({ name: lsUsername, id: storedUserId, points: 0 });
     const [currentUserId, setCurrentUserId] = useState(normalizeId(storedUserId) || "anon");
     const [inviteCode, setInviteCode]   = useState("");
     const [joinCode, setJoinCode]       = useState(initialCode);
@@ -257,7 +257,8 @@ export default function BattlePage() {
                 if (res.data.user) {
                     const apiName = res.data.user.name || lsUsername;
                     const resolvedUserId = normalizeId(res.data.user._id || res.data.user.id || storedUserId) || "anon";
-                    setUser({ name: apiName, id: resolvedUserId });
+                    const userPoints = res.data.user.points || 0;
+                    setUser({ name: apiName, id: resolvedUserId, points: userPoints });
                     setCurrentUserId(resolvedUserId);
                     localStorage.setItem("username", apiName);
                     if (resolvedUserId) {
@@ -367,6 +368,18 @@ export default function BattlePage() {
             setChat(c => [...c, { system: true, msg: `Player ${normalizeId(uid) === currentUserId ? "(you)" : "opponent"} disconnected` }])
         );
     }, [currentUserId, token, activeQ, questions]);
+
+    // Update user points when global user stats change elsewhere
+    useEffect(() => {
+        const handler = (e) => {
+            if (e?.detail && e.detail.user) {
+                const u = e.detail.user;
+                setUser(prev => ({ ...prev, points: u.points || 0 }));
+            }
+        };
+        window.addEventListener('devio:userStatsUpdated', handler);
+        return () => window.removeEventListener('devio:userStatsUpdated', handler);
+    }, []);
 
     // ── startTimer accepts an optional seconds override ──
     const startTimer = (overrideSeconds) => {
